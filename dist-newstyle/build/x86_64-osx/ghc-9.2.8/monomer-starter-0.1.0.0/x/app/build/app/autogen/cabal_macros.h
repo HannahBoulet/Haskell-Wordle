@@ -50,6 +50,16 @@
   (major1) == 1 && (major2) <  5 || \
   (major1) == 1 && (major2) == 5 && (minor) <= 1)
 #endif /* MIN_VERSION_monomer */
+/* package random-1.2.1.1 */
+#ifndef VERSION_random
+#define VERSION_random "1.2.1.1"
+#endif /* VERSION_random */
+#ifndef MIN_VERSION_random
+#define MIN_VERSION_random(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  2 || \
+  (major1) == 1 && (major2) == 2 && (minor) <= 1)
+#endif /* MIN_VERSION_random */
 /* package text-1.2.5.0 */
 #ifndef VERSION_text
 #define VERSION_text "1.2.5.0"
