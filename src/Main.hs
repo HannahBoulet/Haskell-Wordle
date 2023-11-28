@@ -3,12 +3,14 @@
 
 module Main where
 
+import Control.Exception
 import Control.Lens
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
 import Monomer
 import Monomer.Lens qualified as L
+import System.IO
 import System.Random
 import TextShow
 
@@ -26,13 +28,13 @@ data GuessResult = GuessResult
 
 data GameState = GameState {targetWord :: MainWord, guesses :: [Guess], maxAttempts :: Int} deriving (Show)
 
-wordBank :: [MainWord]
-wordBank = ["apple", "table", "house", "chair", "grass"]
+wordBankFilePath :: FilePath
+wordBankFilePath = "Words/wordle-answers-alphabetical.txt"
 
-generateRandomWord :: IO MainWord
-generateRandomWord = do
-  index <- randomRIO (0, length wordBank - 1)
-  return (wordBank !! index)
+readWordBank :: FilePath -> IO [MainWord]
+readWordBank filePath = do
+  contents <- readFile filePath
+  return $ lines contents
 
 -- Function to check a guess against the target word and produce a GuessResult
 checkGuess :: MainWord -> Guess -> GuessResult
@@ -55,9 +57,15 @@ updateGameState guess state@(GameState target guessesLeft attempts) =
 -- Function to play the game
 playWordle :: IO ()
 playWordle = do
-  target <- generateRandomWord
+  wordBankFromFile <- readWordBank wordBankFilePath
+  target <- pickRandomWord wordBankFromFile
   let initialState = GameState target [] 6
   playRound initialState
+
+pickRandomWord :: [MainWord] -> IO MainWord
+pickRandomWord words = do
+  index <- randomRIO (0, length words - 1)
+  return (words !! index)
 
 playRound :: GameState -> IO ()
 playRound state@(GameState target _ attempts)
