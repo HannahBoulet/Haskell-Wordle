@@ -86,6 +86,6 @@ playRound state@(GameState target _ attempts)
             then putStrLn "Congratulations! You guessed the word!"
             else playRound newState
 
--- Main function to start the game
+-- Main function the game
 main :: IO ()
 main = playWordle
