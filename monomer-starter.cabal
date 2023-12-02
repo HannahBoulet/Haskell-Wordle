@@ -34,4 +34,6 @@ executable app
     , text
     , text-show
     , random
+    , ghc-boot
+    , ghc
   default-language: Haskell2010
