@@ -30,6 +30,26 @@
   (major1) == 0 && (major2) <  7 || \
   (major1) == 0 && (major2) == 7 && (minor) <= 1)
 #endif /* MIN_VERSION_data_default */
+/* package ghc-9.2.8 */
+#ifndef VERSION_ghc
+#define VERSION_ghc "9.2.8"
+#endif /* VERSION_ghc */
+#ifndef MIN_VERSION_ghc
+#define MIN_VERSION_ghc(major1,major2,minor) (\
+  (major1) <  9 || \
+  (major1) == 9 && (major2) <  2 || \
+  (major1) == 9 && (major2) == 2 && (minor) <= 8)
+#endif /* MIN_VERSION_ghc */
+/* package ghc-boot-9.2.8 */
+#ifndef VERSION_ghc_boot
+#define VERSION_ghc_boot "9.2.8"
+#endif /* VERSION_ghc_boot */
+#ifndef MIN_VERSION_ghc_boot
+#define MIN_VERSION_ghc_boot(major1,major2,minor) (\
+  (major1) <  9 || \
+  (major1) == 9 && (major2) <  2 || \
+  (major1) == 9 && (major2) == 2 && (minor) <= 8)
+#endif /* MIN_VERSION_ghc_boot */
 /* package lens-5.2.3 */
 #ifndef VERSION_lens
 #define VERSION_lens "5.2.3"
