@@ -36,7 +36,8 @@ data AppModel = AppModel
   { _newItemText :: Text,
     _items :: [ListItem],
     _colorMatch :: GuessResult,
-    _target :: Text
+    _target :: Text,
+    _gameWon :: Bool
   }
   deriving (Eq, Show)
 
@@ -104,14 +105,18 @@ buildUI wenv model = widgetTree
               [ label "Enter your guess here:",
                 spacer,
                 textField_ newItemText [placeholder "Write here!"]
-                  `nodeKey` "description",
+                  `nodeKey` "description"
+                  `nodeEnabled` not (model ^. gameWon), -- Disable input if game is won
                 spacer,
                 button "Submit" AddItem
                   `styleBasic` [paddingH 5]
-                  `nodeEnabled` (model ^. newItemText /= "")
+                  `nodeEnabled` not (model ^. gameWon && model ^. newItemText /= "")
               ],
           separatorLine `styleBasic` [paddingT 20, paddingB 10],
-          vstack (zipWith listItem [0 ..] (model ^. items))
+          vstack (zipWith listItem [0 ..] (model ^. items)),
+          if model ^. gameWon
+            then label "CorrectWord!" `styleBasic` [textSize 24, padding 10]
+            else spacer
         ]
         `styleBasic` [padding 20]
 
@@ -124,14 +129,22 @@ handleEvent ::
 handleEvent wenv node model evt = case evt of
   AppInit -> []
   AddItem
-    | T.length (model ^. newItemText) == 5 ->
-        [ Model $
-            model
-              & colorMatch .~ colorMatchChars
-              & newItemText .~ ""
-              & items .~ newItem : model ^. items,
-          SetFocusOnKey "description"
-        ]
+    | not (model ^. gameWon) && T.length (model ^. newItemText) == 5 ->
+        let newModel =
+              model
+                & colorMatch .~ colorMatchChars
+                & newItemText .~ ""
+                & items .~ newItem : model ^. items
+         in if model ^. target == model ^. newItemText
+              then
+                [ Model $
+                    newModel & gameWon .~ True,
+                  SetFocusOnKey "description"
+                ]
+              else
+                [ Model newModel,
+                  SetFocusOnKey "description"
+                ]
   _ -> []
   where
     colorMatchChars = checkGuess (model ^. target) (model ^. newItemText)
@@ -164,5 +177,6 @@ main = do
                 wrongPlace = ""
                 incorrect = ""
              in GuessResult correctPlace wrongPlace incorrect,
-          _target = T.pack randomWord
+          _target = T.pack randomWord,
+          _gameWon = False
         }
