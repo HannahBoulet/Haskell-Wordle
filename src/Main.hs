@@ -4,6 +4,7 @@
 module Main where
 
 import Control.Lens
+import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
@@ -17,23 +18,26 @@ import System.Random
 import TextShow
 
 data ListItem = ListItem
-  { _ts :: Millisecond,
-    _text :: Text,
-    _correctLetters :: Text,
-    _wrongLetters :: Text,
-    _incorrectLetters :: Text
+  { _text :: Text,
+    _itemChar1 :: ([Char], Int),
+    _itemChar2 :: ([Char], Int),
+    _itemChar3 :: ([Char], Int),
+    _itemChar4 :: ([Char], Int),
+    _itemChar5 :: ([Char], Int)
   }
   deriving (Eq, Show)
 
 data GuessResult = GuessResult
-  { _correctPlace :: [Char],
-    _wrongPlace :: [Char],
-    _incorrect :: [Char]
+  { _char1 :: ([Char], Int),
+    _char2 :: ([Char], Int),
+    _char3 :: ([Char], Int),
+    _char4 :: ([Char], Int),
+    _char5 :: ([Char], Int)
   }
   deriving (Eq, Show)
 
 data AppModel = AppModel
-  { _newItemText :: Text,
+  { _guessText :: Text,
     _items :: [ListItem],
     _colorMatch :: GuessResult,
     _target :: Text,
@@ -43,8 +47,7 @@ data AppModel = AppModel
 
 data AppEvent
   = AppInit
-  | AddItem
-  --   | RemoveItem Int
+  | GenerateGuess
   deriving (Eq, Show)
 
 wordBankFilePath :: FilePath
@@ -64,16 +67,27 @@ getRandomWordFromFile filepath = do
   let wordsList = getWords contents
   getRandomElement wordsList
 
-checkGuess :: Text -> Text -> GuessResult
-checkGuess targetText guessText =
-  let target = T.unpack targetText
-      guess = T.unpack guessText
-      correct = [ch | (ch, idx) <- zip guess [0 ..], target !! idx == ch]
-      remainingTarget = filter (`notElem` correct) target
-      remainingGuess = filter (`notElem` correct) guess
-      correctButWrongPlace = intersect remainingTarget remainingGuess
-      incorrectGuess = remainingGuess \\ correctButWrongPlace
-   in GuessResult correct correctButWrongPlace incorrectGuess
+checkGuess :: String -> String -> GuessResult
+checkGuess target guess =
+  GuessResult
+    { _char1 = compareChars (target !! 0) (guess !! 0),
+      _char2 = compareChars (target !! 1) (guess !! 1),
+      _char3 = compareChars (target !! 2) (guess !! 2),
+      _char4 = compareChars (target !! 3) (guess !! 3),
+      _char5 = compareChars (target !! 4) (guess !! 4)
+    }
+  where
+    compareChars :: Char -> Char -> ([Char], Int)
+    compareChars tChar gChar
+      | tChar == gChar = ([gChar], 0)
+      | gChar `elem` target = ([gChar], 1)
+      | otherwise = ([gChar], 2)
+
+labelText :: ([Char], Int) -> Text
+labelText (_, 0) = T.pack "G"
+labelText (_, 1) = T.pack "Y"
+labelText (_, 2) = T.pack "R"
+labelText _ = T.pack "Invalid Label"
 
 makeLenses 'ListItem
 makeLenses 'AppModel
@@ -89,34 +103,79 @@ buildUI wenv model = widgetTree
       vstack
         [ label_ (item ^. text) [ellipsis] `styleBasic` [textSize 24, paddingH 8],
           spacer,
-          label $ "Correct: " <> showt (item ^. correctLetters),
+          hstack
+            [ label "Chars: ",
+              spacer,
+              label ("" <> T.pack (show $ fst (item ^. itemChar1))) `styleBasic` [textSize 20],
+              spacer,
+              label ("" <> T.pack (show $ fst (item ^. itemChar2))) `styleBasic` [textSize 20],
+              spacer,
+              label ("" <> T.pack (show $ fst (item ^. itemChar3))) `styleBasic` [textSize 20],
+              spacer,
+              label ("" <> T.pack (show $ fst (item ^. itemChar4))) `styleBasic` [textSize 20],
+              spacer,
+              label ("" <> T.pack (show $ fst (item ^. itemChar5))) `styleBasic` [textSize 20]
+            ],
           spacer,
-          label $ "Incorrectly placed: " <> showt (item ^. wrongLetters),
-          spacer,
-          label $ "Incorrect: " <> showt (item ^. incorrectLetters)
+          hstack
+            [ label "Labels: ",
+              spacer,
+              if labelText (item ^. itemChar1) == "G"
+                then label "▪" `styleBasic` [textSize 40, textColor green]
+                else
+                  if labelText (item ^. itemChar1) == "Y"
+                    then label "▪" `styleBasic` [textSize 40, textColor yellow]
+                    else label "▪" `styleBasic` [textSize 40, textColor red],
+              spacer,
+              if labelText (item ^. itemChar2) == "G"
+                then label "▪" `styleBasic` [textSize 40, textColor green]
+                else
+                  if labelText (item ^. itemChar2) == "Y"
+                    then label "▪" `styleBasic` [textSize 40, textColor yellow]
+                    else label "▪" `styleBasic` [textSize 40, textColor red],
+              spacer,
+              if labelText (item ^. itemChar3) == "G"
+                then label "▪" `styleBasic` [textSize 40, textColor green]
+                else
+                  if labelText (item ^. itemChar3) == "Y"
+                    then label "▪" `styleBasic` [textSize 40, textColor yellow]
+                    else label "▪" `styleBasic` [textSize 40, textColor red],
+              spacer,
+              if labelText (item ^. itemChar4) == "G"
+                then label "▪" `styleBasic` [textSize 40, textColor green]
+                else
+                  if labelText (item ^. itemChar4) == "Y"
+                    then label "▪" `styleBasic` [textSize 40, textColor yellow]
+                    else label "▪" `styleBasic` [textSize 40, textColor red],
+              spacer,
+              if labelText (item ^. itemChar5) == "G"
+                then label "▪" `styleBasic` [textSize 40, textColor green]
+                else
+                  if labelText (item ^. itemChar5) == "Y"
+                    then label "▪" `styleBasic` [textSize 40, textColor yellow]
+                    else label "▪" `styleBasic` [textSize 40, textColor red]
+            ]
         ]
-        `nodeKey` showt (item ^. ts)
         `styleBasic` [paddingT 10]
-
     widgetTree =
       vstack
-        [ keystroke [("Enter", AddItem)] $
+        [ keystroke [("Enter", GenerateGuess)] $
             hstack
               [ label "Enter your guess here:",
                 spacer,
-                textField_ newItemText [placeholder "Write here!"]
+                textField_ guessText [placeholder "Write here!"]
                   `nodeKey` "description"
-                  `nodeEnabled` not (model ^. gameWon), -- Disable input if game is won
+                  `nodeEnabled` not (model ^. gameWon),
                 spacer,
-                button "Submit" AddItem
+                button "Submit" GenerateGuess
                   `styleBasic` [paddingH 5]
-                  `nodeEnabled` not (model ^. gameWon && model ^. newItemText /= "")
+                  `nodeEnabled` not (model ^. gameWon && model ^. guessText /= "")
               ],
           separatorLine `styleBasic` [paddingT 20, paddingB 10],
-          vstack (zipWith listItem [0 ..] (model ^. items)),
           if model ^. gameWon
-            then label "CorrectWord!" `styleBasic` [textSize 24, padding 10]
-            else spacer
+            then label ("Correct! The word was: " <> (model ^. target)) `styleBasic` [textSize 24, padding 10]
+            else spacer,
+          vscroll (vstack (zipWith listItem [0 ..] (model ^. items))) `nodeKey` "mainScroll"
         ]
         `styleBasic` [padding 20]
 
@@ -128,14 +187,14 @@ handleEvent ::
   [AppEventResponse AppModel AppEvent]
 handleEvent wenv node model evt = case evt of
   AppInit -> []
-  AddItem
-    | not (model ^. gameWon) && T.length (model ^. newItemText) == 5 ->
+  GenerateGuess
+    | all isAlpha (T.unpack (model ^. guessText)) && not (model ^. gameWon) && T.length (model ^. guessText) == 5 ->
         let newModel =
               model
                 & colorMatch .~ colorMatchChars
-                & newItemText .~ ""
+                & guessText .~ ""
                 & items .~ newItem : model ^. items
-         in if model ^. target == model ^. newItemText
+         in if model ^. target == model ^. guessText
               then
                 [ Model $
                     newModel & gameWon .~ True,
@@ -147,18 +206,20 @@ handleEvent wenv node model evt = case evt of
                 ]
   _ -> []
   where
-    colorMatchChars = checkGuess (model ^. target) (model ^. newItemText)
-    newItem = ListItem (currentTimeMs wenv) (model ^. newItemText) (T.pack (grabChar colorMatchChars 0)) (T.pack (grabChar colorMatchChars 1)) (T.pack (grabChar colorMatchChars 2))
+    colorMatchChars = checkGuess (T.unpack (model ^. target)) (map toLower (T.unpack (model ^. guessText)))
+    newItem = ListItem (T.pack (map toLower (T.unpack (model ^. guessText)))) (grabChar colorMatchChars 0) (grabChar colorMatchChars 1) (grabChar colorMatchChars 2) (grabChar colorMatchChars 3) (grabChar colorMatchChars 4)
 
-grabChar :: GuessResult -> Int -> [Char]
-grabChar match 0 = match ^. correctPlace
-grabChar match 1 = match ^. wrongPlace
-grabChar match 2 = match ^. incorrect
-grabChar match _ = ""
+grabChar :: GuessResult -> Int -> ([Char], Int)
+grabChar match 0 = match ^. char1
+grabChar match 1 = match ^. char2
+grabChar match 2 = match ^. char3
+grabChar match 3 = match ^. char4
+grabChar match 4 = match ^. char5
+grabChar match _ = ("", -1)
 
 main :: IO ()
 main = do
-  randomWord <- getRandomWordFromFile wordBankFilePath -- Get the random word
+  randomWord <- getRandomWordFromFile wordBankFilePath
   startApp (model randomWord) handleEvent buildUI config
   where
     config =
@@ -170,13 +231,15 @@ main = do
       ]
     model randomWord = do
       AppModel
-        { _newItemText = "",
+        { _guessText = "",
           _items = [],
           _colorMatch =
-            let correctPlace = ""
-                wrongPlace = ""
-                incorrect = ""
-             in GuessResult correctPlace wrongPlace incorrect,
+            let char1 = ("", -1)
+                char2 = ("", -1)
+                char3 = ("", -1)
+                char4 = ("", -1)
+                char5 = ("", -1)
+             in GuessResult char1 char2 char3 char4 char5,
           _target = T.pack randomWord,
           _gameWon = False
         }
