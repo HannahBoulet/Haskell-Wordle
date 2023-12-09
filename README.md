@@ -1,10 +1,6 @@
-# Monomer starter application
+# Wordle in Haskell using Monomer
 
-Starter application for the Monomer library, including:
+Simple Wordle GUI that will allow the user to play a version of Wordle in Haskell! 
 
-- Dependencies
-- Model and events type
-- Event handler
-- UI builder
 
-For more information, check https://github.com/fjvallarino/monomer.
+For more information on the GUI Monomer, check https://github.com/fjvallarino/monomer.
