@@ -17,6 +17,7 @@ import System.IO
 import System.Random
 import TextShow
 
+-- DATA TYPE FOR EACH GUESS ITEM OUTPUTTED TO THE USER --
 data ListItem = ListItem
   { _text :: Text,
     _itemChar1 :: ([Char], Int),
@@ -27,6 +28,7 @@ data ListItem = ListItem
   }
   deriving (Eq, Show)
 
+-- DATA TYPE TO STORE POSITIONAL INFORMATION ABOUT GUESS RESULTS --
 data GuessResult = GuessResult
   { _char1 :: ([Char], Int),
     _char2 :: ([Char], Int),
@@ -36,6 +38,7 @@ data GuessResult = GuessResult
   }
   deriving (Eq, Show)
 
+-- DATA TYPE WHICH DEFINES THE MODEL FOR THE APPLICATION AND ALL ITS FIELDS --
 data AppModel = AppModel
   { _guessText :: Text,
     _items :: [ListItem],
@@ -45,11 +48,13 @@ data AppModel = AppModel
   }
   deriving (Eq, Show)
 
+-- DATA TYPE DEFINING THE EVENTS OF THE APPLICATION --
 data AppEvent
   = AppInit
   | GenerateGuess
   deriving (Eq, Show)
 
+-- RANDOM WORD FROM WORD BANK SELECTION HELPERS --
 wordBankFilePath :: FilePath
 wordBankFilePath = "Words/wordle-answers-alphabetical.txt"
 
@@ -67,32 +72,36 @@ getRandomWordFromFile filepath = do
   let wordsList = getWords contents
   getRandomElement wordsList
 
+-- GUESS COMPARISON HELPERS --
 checkGuess :: String -> String -> GuessResult
 checkGuess target guess =
   GuessResult
-    { _char1 = compareChars (target !! 0) (guess !! 0),
-      _char2 = compareChars (target !! 1) (guess !! 1),
-      _char3 = compareChars (target !! 2) (guess !! 2),
-      _char4 = compareChars (target !! 3) (guess !! 3),
-      _char5 = compareChars (target !! 4) (guess !! 4)
+    { _char1 = compareChars (target !! 0) (guess !! 0) target,
+      _char2 = compareChars (target !! 1) (guess !! 1) target,
+      _char3 = compareChars (target !! 2) (guess !! 2) target,
+      _char4 = compareChars (target !! 3) (guess !! 3) target,
+      _char5 = compareChars (target !! 4) (guess !! 4) target
     }
-  where
-    compareChars :: Char -> Char -> ([Char], Int)
-    compareChars tChar gChar
-      | tChar == gChar = ([gChar], 0)
-      | gChar `elem` target = ([gChar], 1)
-      | otherwise = ([gChar], 2)
 
+compareChars :: Char -> Char -> String -> ([Char], Int)
+compareChars tChar gChar target
+  | tChar == gChar = ([gChar], 0)
+  | gChar `elem` target = ([gChar], 1)
+  | otherwise = ([gChar], 2)
+
+-- HELPER TO PULL OUT GUESS RESULTS --
 labelText :: ([Char], Int) -> Text
 labelText (_, 0) = T.pack "G"
 labelText (_, 1) = T.pack "Y"
 labelText (_, 2) = T.pack "R"
 labelText _ = T.pack "Invalid Label"
 
+-- LENSES TO SUFFICIENTLY LOOK INSIDE DATATYPES --
 makeLenses 'ListItem
 makeLenses 'AppModel
 makeLenses ''GuessResult
 
+-- BUILDUI TO BUILD THE UI OFF THE GIVEN MODEL AND ACTUALLY OUTPUT, BUILD AND STYLE THINGS ONTO THE PANEL FOR THE USER --
 buildUI ::
   WidgetEnv AppModel AppEvent ->
   AppModel ->
@@ -179,6 +188,7 @@ buildUI wenv model = widgetTree
         ]
         `styleBasic` [padding 20]
 
+-- EVENT HANDLER WHICH HANDLES MOST OF THE INTERNAL GAME LOGIC, JUST HAS INIT AND GUESS EVENTS --
 handleEvent ::
   WidgetEnv AppModel AppEvent ->
   WidgetNode AppModel AppEvent ->
@@ -209,6 +219,7 @@ handleEvent wenv node model evt = case evt of
     colorMatchChars = checkGuess (T.unpack (model ^. target)) (map toLower (T.unpack (model ^. guessText)))
     newItem = ListItem (T.pack (map toLower (T.unpack (model ^. guessText)))) (grabChar colorMatchChars 0) (grabChar colorMatchChars 1) (grabChar colorMatchChars 2) (grabChar colorMatchChars 3) (grabChar colorMatchChars 4)
 
+-- HELPER TO GRAB CHARACTERS OUT FROM GUESS RESULT FOR THE LIST ITEM --
 grabChar :: GuessResult -> Int -> ([Char], Int)
 grabChar match 0 = match ^. char1
 grabChar match 1 = match ^. char2
@@ -217,6 +228,7 @@ grabChar match 3 = match ^. char4
 grabChar match 4 = match ^. char5
 grabChar match _ = ("", -1)
 
+-- MAIN TO INITIALIZE STARTING STATE, CONFIGURATIONS, THE EVENT HANDLER, THE MODEL, AND START THE APP FROM THIS INFORMATION --
 main :: IO ()
 main = do
   randomWord <- getRandomWordFromFile wordBankFilePath
